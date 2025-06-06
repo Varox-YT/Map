@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carte interactive – Bruxelles alternative</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen@1.6.0/Control.FullScreen.css" />
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      #map {
+        height: 75vh;
+      }
+      .leaflet-container:fullscreen {
+        height: 100% !important;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 text-gray-900">
+    <header class="bg-blue-900 text-white py-6 shadow-md text-center">
+      <h1 class="text-3xl font-semibold">Parcours culturel alternatif à Bruxelles</h1>
+      <p class="text-sm mt-1">Explorez des lieux insolites et peu fréquentés de la capitale belge.</p>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6">
+      <div class="mb-4">
+        <label for="filter" class="block mb-1 font-medium">Filtrer les lieux :</label>
+        <select id="filter" class="border border-gray-300 rounded p-2 w-full sm:w-64">
+          <option value="all">Tous les lieux</option>
+          <option value="culture">Culture</option>
+          <option value="nature">Nature</option>
+          <option value="architecture">Architecture</option>
+        </select>
+      </div>
+
+      <div id="map" class="rounded shadow-lg border border-gray-300"></div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.locatecontrol/dist/L.Control.Locate.min.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://unpkg.com/leaflet.fullscreen@1.6.0/Control.FullScreen.js"></script>
+    <script>
+      const map = L.map("map", {
+        fullscreenControl: true
+      }).setView([50.8503, 4.3517], 13);
+
+      map.once('load', () => {
+        map.toggleFullscreen();
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors",
+      }).addTo(map);
+
+      const lieux = [
+        { nom: "Parc Duden", coords: [50.8228, 4.3253], type: "nature" },
+        { nom: "Altitude 100 / Église Saint-Augustin", coords: [50.8198, 4.3265], type: "architecture" },
+        { nom: "WIELS - Centre d'art contemporain", coords: [50.8231, 4.3251], type: "culture" },
+        { nom: "Marolles - Ascenseur panoramique", coords: [50.8363, 4.3494], type: "architecture" },
+        { nom: "Étangs d'Ixelles", coords: [50.8274, 4.3662], type: "nature" },
+        { nom: "Abbaye de la Cambre", coords: [50.8239, 4.3726], type: "architecture" },
+        { nom: "Place Flagey", coords: [50.8273, 4.3724], type: "culture" },
+        { nom: "Hôtel Hannon (Saint-Gilles)", coords: [50.8325, 4.3455], type: "architecture" },
+        { nom: "Tour & Taxis", coords: [50.8663, 4.341], type: "culture" },
+        { nom: "Canal de Bruxelles", coords: [50.8611, 4.3403], type: "nature" },
+        { nom: "Gare Maritime Food Market", coords: [50.8675, 4.34], type: "culture" },
+        { nom: "Parc de Laeken", coords: [50.8932, 4.345], type: "nature" },
+        { nom: "Église Notre-Dame de Laeken", coords: [50.8855, 4.3448], type: "architecture" },
+        { nom: "Parlement européen (Altiero Spinelli)", coords: [50.8389, 4.3754], type: "architecture" },
+        { nom: "Musée Magritte", coords: [50.8426, 4.3589], type: "culture" },
+        { nom: "Mac en Pis (parodie du Manneken Pis)", coords: [50.8482, 4.3507], type: "culture" },
+        { nom: "Atomium", coords: [50.895, 4.3416], type: "architecture" },
+        { nom: "Musée de la Bande Dessinée", coords: [50.8505, 4.359], type: "culture" },
+        { nom: "Design Museum Brussels", coords: [50.8943, 4.3435], type: "culture" },
+        { nom: "Parlamentarium - Musée du Parlement européen", coords: [50.8385, 4.3746], type: "culture" },
+        { nom: "Maison Autrique", coords: [50.8671, 4.3674], type: "architecture" }
+      ];
+
+      const markerCluster = L.markerClusterGroup();
+
+      function afficherLieux(filtre) {
+        markerCluster.clearLayers();
+        lieux
+          .filter((lieu) => filtre === "all" || lieu.type === filtre)
+          .forEach((lieu) => {
+            const marker = L.marker(lieu.coords).bindPopup(`<strong>${lieu.nom}</strong>`);
+            markerCluster.addLayer(marker);
+          });
+        map.addLayer(markerCluster);
+      }
+
+      document.getElementById("filter").addEventListener("change", (e) => {
+        afficherLieux(e.target.value);
+      });
+
+      afficherLieux("all");
+
+      if (window.isSecureContext && "geolocation" in navigator) {
+        const locateControl = L.control
+          .locate({
+            position: "topleft",
+            flyTo: true,
+            keepCurrentZoomLevel: true,
+            strings: { title: "Afficher ma position actuelle" },
+            setView: true,
+            cacheLocation: true,
+          })
+          .addTo(map);
+
+        map.on("locationerror", (err) => {
+          console.error("Erreur de géolocalisation :", err);
+          alert(
+            "Erreur de géolocalisation : " +
+              (err.message ||
+                "Permission refusée ou environnement non autorisé.")
+          );
+        });
+
+        map.on("locationfound", (e) => {
+          console.log("Position trouvée :", e);
+        });
+      } else {
+        console.warn("Géolocalisation non disponible dans cet environnement.");
+        alert(
+          "La géolocalisation ne peut pas être activée. Veuillez utiliser un navigateur HTTPS avec l'autorisation de localisation activée."
+        );
+      }
+    </script>
+  </body>
+</html>
